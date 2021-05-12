@@ -46,6 +46,22 @@ yarn install
 [npm]: https://www.npmjs.com/
 [Yarn]: https://classic.yarnpkg.com/en/docs/install/
 
+## Troubleshooting
+
+Should you run into this error below:
+```
+Mysql2::Error: Access denied for user 'whitehall'@'localhost' (using password: YES)
+```
+
+Login, create user, give access & quit
+
+```
+mysql -u root -p
+CREATE USER whitehall@localhost IDENTIFIED BY 'whitehall';
+grant all privileges on *.* to whitehall@localhost with grant option;
+\q
+```
+
 ### Dependent GOV.UK apps
 
 - [alphagov/asset-manager](http://github.com/alphagov/asset-manager): provides uploading for static files
