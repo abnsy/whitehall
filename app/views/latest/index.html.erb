@@ -4,10 +4,26 @@
 
 <header class="block headings-block">
   <div class="govuk-width-container">
+    <%= render "govuk_publishing_components/components/breadcrumbs", {
+      breadcrumbs: [
+        {
+          title: "Home",
+          url: "/",
+        },
+        {
+          title: "Organisations",
+          url: "/organisations",
+        },
+        {
+          title: "#{subject}",
+          url: subject['slug'],
+        },
+      ]
+    } %>
+
     <%= render "govuk_publishing_components/components/title", {
       context: {
         text: subject,
-        href: subject,
       },
       title: "Latest documents",
     } %>
