@@ -355,8 +355,8 @@ en:
       all: All locations
       label: World locations
   feeds:
-    email: email
-    feed: feed
+    email: Get emails
+    feed: Subscribe to feed
     get_updates_to_this_list: Get updates to this list
     latest_activity: Latest activity
   i18n:

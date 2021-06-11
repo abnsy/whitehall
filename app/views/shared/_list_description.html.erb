@@ -1,28 +1,24 @@
-<ol class="document-list">
-  <% editions.each_with_index do |edition, edition_index| %>
-    <%= content_tag_for(:li, edition, class: 'document-row') do %>
-      <h2>
-        <%=
-          link_to(
-            edition.title,
-            public_document_path(edition),
-            class: "govuk-link",
-            data: {
-              track_category: 'navPolicyAreaLinkClicked',
-              track_action: "#{local_assigns.has_key?(:heading) ? heading : "Unknown"}.#{edition_index + 1}",
-              track_label: public_document_path(edition),
-              track_options: {
-                dimension28: editions.count.to_s,
-                dimension29: edition.title
-              }
-            }
-          )
-        %>
-      </h2>
-      <ul class="attributes">
-        <li class="publication-date"><%= edition.display_date_microformat %></li>
-        <li class="document-type" <%= t_lang('document.type.' + edition.display_type_key, {count: 1}) %>><%= t_display_type(edition) %></li>
-      </ul>
-    <% end %>
-  <% end %>
-</ol>
+
+<%= render "govuk_publishing_components/components/document_list", {
+  items: editions.each_with_index.map do |edition, edition_index|
+    {
+      link: {
+        text: edition.title,
+        path: public_document_path(edition),
+        data_attributes: {
+          track_category: "navPolicyAreaLinkClicked",
+          track_action: "#{local_assigns.has_key?(:heading) ? heading : "Unknown"}.#{edition_index + 1}",
+          track_label: public_document_path(edition),
+          track_options: {
+            dimension28: editions.count.to_s,
+            dimension29: edition.title
+          }
+        }
+      },
+      metadata: {
+        public_updated_at: edition.display_date_microformat.to_time,
+        document_type: t_display_type(edition)
+      }
+    }
+  end
+} %>
