@@ -6,7 +6,6 @@
    filter_type = @classification || @world_location || @topical_event
 %>
 <section id="<%= heading.downcase.parameterize %>" class="document-block">
-  <h1 class="label"><%= heading %></h1>
   <%= render "govuk_publishing_components/components/heading", {
     text: heading
   } %>
