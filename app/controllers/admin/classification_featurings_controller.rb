@@ -1,8 +1,5 @@
 class Admin::ClassificationFeaturingsController < Admin::BaseController
   before_action :load_classification
-  before_action :load_featuring, only: %i[edit destroy]
-
-  def edit; end
 
   def index
     filter_params = params.slice(:page, :type, :author, :organisation, :title)
@@ -52,13 +49,15 @@ class Admin::ClassificationFeaturingsController < Admin::BaseController
   end
 
   def destroy
+    classification_featuring = @classification.classification_featurings.find(params[:id])
+
     if featuring_a_document?
-      edition = @classification_featuring.edition
-      @classification_featuring.destroy!
+      edition = classification_featuring.edition
+      classification_featuring.destroy!
       flash[:notice] = "#{edition.title} has been unfeatured from #{@classification.name}"
     else
-      offsite_link = @classification_featuring.offsite_link
-      @classification_featuring.destroy!
+      offsite_link = classification_featuring.offsite_link
+      classification_featuring.destroy!
       flash[:notice] = "#{offsite_link.title} has been unfeatured from #{@classification.name}"
     end
     redirect_to polymorphic_path([:admin, @classification, :classification_featurings])
@@ -73,10 +72,6 @@ private
 
   def load_classification
     @classification = Classification.find(params[:topical_event_id] || params[:topic_id])
-  end
-
-  def load_featuring
-    @classification_featuring = @classification.classification_featurings.find(params[:id])
   end
 
   def editions_to_show
