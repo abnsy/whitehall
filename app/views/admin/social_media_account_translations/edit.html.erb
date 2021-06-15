@@ -2,6 +2,4 @@
 
 <h1>Edit ‘<%= translation_locale.native_language_name %> (<%= translation_locale.english_language_name %>)’ translation for: <%= @social_media_account.title %></h1>
 
-<%= render partial: 'form', locals: { translated_social_media_account: @translated_social_media_account,
-                                      form_path: admin_organisation_social_media_account_translation_path(@socialable, @translated_social_media_account, translation_locale),
-                                      cancel_path: admin_organisation_social_media_accounts_path(@socialable) } %>
+<%= render partial: "form", locals: {translated_social_media_account: @translated_social_media_account, socialable: @socialable} %>

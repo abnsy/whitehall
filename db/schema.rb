@@ -951,18 +951,18 @@ ActiveRecord::Schema.define(version: 2021_05_19_142020) do
   create_table "social_media_account_translations", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "social_media_account_id", null: false
     t.string "locale", null: false
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.string "title"
-    t.string "url"
-    t.index ["locale"], name: "index_social_media_account_translations_on_locale"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "title"
+    t.text "url"
+    t.index ["locale"], name: "index_social_media_account_translations_on_locale", length: 191
     t.index ["social_media_account_id"], name: "index_9a53de61b0e824c8ce3da9dc8eb648e404cdfcde"
   end
 
   create_table "social_media_accounts", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.integer "socialable_id"
     t.integer "social_media_service_id"
-    t.string "url"
+    t.text "url"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string "socialable_type"

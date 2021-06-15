@@ -1,6 +1,6 @@
 class CreateSocialMediaAccountTranslations < ActiveRecord::Migration[6.0]
   def up
-    SocialMediaAccount.create_translation_table!({ title: :string }, { migrate_data: true })
+    SocialMediaAccount.create_translation_table!({ title: :text }, { migrate_data: true })
   end
 
   def down

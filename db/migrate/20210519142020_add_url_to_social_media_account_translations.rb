@@ -2,7 +2,7 @@ class AddUrlToSocialMediaAccountTranslations < ActiveRecord::Migration[6.0]
   def change
     reversible do |dir|
       dir.up do
-        SocialMediaAccount.add_translation_fields!({ url: :string }, { migrate_data: true })
+        SocialMediaAccount.add_translation_fields!({ url: :text }, { migrate_data: true })
       end
 
       dir.down do
