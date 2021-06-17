@@ -32,10 +32,6 @@ module ApplicationHelper
     # rubocop:enable Rails/HelperInstanceVariable
   end
 
-  def api_link_tag(path)
-    tag :link, href: path, rel: "alternate", type: Mime[:json]
-  end
-
   def format_in_paragraphs(string)
     safe_join(
       String(string)
