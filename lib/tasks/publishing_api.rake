@@ -104,6 +104,12 @@ namespace :publishing_api do
     RoleAppointment.find_each(&:publish_to_publishing_api)
   end
 
+  desc "Republish a document to the Publishing API"
+  task :republish_document, [:slug] => :environment do |_, args|
+    document = Document.find_by!(slug: args[:slug])
+    PublishingApiDocumentRepublishingWorker.new.perform(document.id)
+  end
+
   desc "Send links for all organisations to Publishing API."
   task patch_organisation_links: :environment do
     count = Organisation.count
@@ -142,33 +148,30 @@ namespace :publishing_api do
     patch_edition_links(editions, "published")
   end
 
-  desc "Republish a document to the Publishing API"
-  task :republish_document, [:slug] => :environment do |_, args|
-    document = Document.find_by!(slug: args[:slug])
-    PublishingApiDocumentRepublishingWorker.new.perform(document.id)
-  end
-
-  desc "Republish all editions which have attachments to the Publishing API"
-  task republish_editions_with_attachments: :environment do
-    editions = Edition.publicly_visible.where(id: Attachment.where(accessible: false, attachable_type: "Edition").select("attachable_id"))
-    editions.joins(:document).distinct.pluck("documents.id").each do |document_id|
-      PublishingApiDocumentRepublishingWorker.perform_async(document_id, true)
-    end
-  end
-
-  desc "Republish all documents with HTML attachments to the Publishing API"
-  task republish_html_attachments: :environment do
-    document_ids = Edition
-      .publicly_visible
-      .where(id: HtmlAttachment.where(attachable_type: "Edition").select(:attachable_id))
-      .pluck(:document_id)
-    document_ids.each do |document_id|
-      PublishingApiDocumentRepublishingWorker.perform_async_in_queue("bulk_republishing", document_id, true)
-    end
-  end
-
   desc "Bulk republishing"
   namespace :bulk_republish do
+    desc "Republish all editions which have attachments to the Publishing API"
+    task republish_editions_with_attachments: :environment do
+      editions = Edition.publicly_visible.where(
+        id: Attachment.where(accessible: false, attachable_type: "Edition").select("attachable_id")
+      )
+
+      editions.joins(:document).distinct.pluck("documents.id").each do |document_id|
+        PublishingApiDocumentRepublishingWorker.perform_async_in_queue("bulk_republishing", document_id, true)
+      end
+    end
+
+    desc "Republish all documents with HTML attachments to the Publishing API"
+    task republish_html_attachments: :environment do
+      document_ids = Edition
+        .publicly_visible
+        .where(id: HtmlAttachment.where(attachable_type: "Edition").select(:attachable_id))
+        .pluck(:document_id)
+      document_ids.each do |document_id|
+        PublishingApiDocumentRepublishingWorker.perform_async_in_queue("bulk_republishing", document_id, true)
+      end
+    end
+
     desc "Republish all documents of a given type, eg 'NewsArticle'"
     task :document_type, [:document_type] => :environment do |_, args|
       documents = Document.where(document_type: args[:document_type])
@@ -232,19 +235,8 @@ namespace :publishing_api do
   # does). Do not use these Rake tasks for content which Whitehall still
   # has a record of.
   namespace :unpublish_with_redirect do
-    desc "Manually unpublish content with a redirect (dry run)"
-    task :dry_run, %i[content_id alternative_path locale] => :environment do |_, args|
-      args.with_defaults(locale: "en")
-
-      document = Document.find_by(content_id: args[:content_id])
-      abort "Document with this content ID exists: #{document}" if document
-
-      puts "Would send an unpublish request to the Publishing API for #{args[:content_id]} with:"
-      puts "  type 'redirect', locale: #{args[:locale]} and alternative_path #{args[:alternative_path].strip}"
-    end
-
-    desc "Manually unpublish content with a redirect (for reals)"
-    task :real, %i[content_id alternative_path locale] => :environment do |_, args|
+    desc "Manually unpublish content with a redirect"
+    task :for_content_id, %i[content_id alternative_path locale] => :environment do |_, args|
       args.with_defaults(locale: "en")
 
       document = Document.find_by(content_id: args[:content_id])

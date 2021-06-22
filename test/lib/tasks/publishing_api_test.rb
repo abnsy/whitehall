@@ -67,6 +67,24 @@ class PublishingApiRake < ActiveSupport::TestCase
     end
   end
 
+  describe "#republish_all_about_pages" do
+    let(:task) { Rake::Task["publishing_api:republish_all_about_pages"] }
+
+    test "republishes all about pages" do
+      corporate_info = create(
+        :published_corporate_information_page,
+        corporate_information_page_type_id: CorporateInformationPageType::AboutUs.id
+      )
+
+      PublishingApiDocumentRepublishingWorker.any_instance.expects(:perform).with(
+        corporate_info.document_id,
+        true
+      )
+
+      task.invoke
+    end
+  end
+
   describe "#republish_*" do
     tasks = [
       { name: "republish_organisation", model: "Organisation" },
@@ -111,21 +129,13 @@ class PublishingApiRake < ActiveSupport::TestCase
     end
   end
 
-  describe "#republish_all_about_pages" do
-    let(:task) { Rake::Task["publishing_api:republish_all_about_pages"] }
+  describe "#republish_document" do
+    let(:task) { Rake::Task["publishing_api:republish_document"] }
 
-    test "republishes all about pages" do
-      corporate_info = create(
-        :published_corporate_information_page,
-        corporate_information_page_type_id: CorporateInformationPageType::AboutUs.id
-      )
-
-      PublishingApiDocumentRepublishingWorker.any_instance.expects(:perform).with(
-        corporate_info.document_id,
-        true
-      )
-
-      task.invoke
+    test "republishes document to Publishing API from slug" do
+      document = create(:document)
+      PublishingApiDocumentRepublishingWorker.any_instance.expects(:perform).with(document.id)
+      task.invoke(document.slug)
     end
   end
 
@@ -180,43 +190,152 @@ class PublishingApiRake < ActiveSupport::TestCase
     end
   end
 
-  describe "#republish_document" do
-    let(:task) { Rake::Task["publishing_api:republish_document"] }
+  describe "#bulk_republish" do
+    describe "#republish_editions_with_attachments" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:republish_editions_with_attachments"] }
 
-    test "sends item links to Publishing API from document type" do
-      edition = create(:publication)
-      PublishingApiLinksWorker.expects(:perform_async).with(edition.id)
-      task.invoke("Publication")
+      test "republishes all editions with attachments" do
+        edition = create(:publication, :published, :with_file_attachment)
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document_id,
+          true,
+        )
+        task.invoke
+      end
+    end
+
+    describe "#republish_html_attachments" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:republish_html_attachments"] }
+
+      test "republishes all documents with HMTL attachments" do
+        edition = create(:publication, :published, :with_html_attachment)
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document_id,
+          true,
+        )
+        task.invoke
+      end
+    end
+
+    describe "#document_type" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:document_type"] }
+
+      test "republishes all documents from document type" do
+        edition = create(:publication)
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document_id,
+          true,
+        )
+        task.invoke("Publication")
+      end
+    end
+
+    describe "#for_organisation" do
+      let(:org) { create(:organisation) }
+      let(:task) { Rake::Task["publishing_api:bulk_republish:for_organisation"] }
+
+      test "Republishes the latest edition for each document owned by the organisation" do
+        edition = create(:published_news_article, organisations: [org])
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document.id,
+          true,
+        )
+
+        task.invoke(org.slug)
+      end
+
+      test "Ignores documents owned by other organisation" do
+        some_other_org = create(:organisation)
+        edition = create(:published_news_article, organisations: [some_other_org])
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document.id,
+          true,
+        ).never
+
+        task.invoke(org.slug)
+      end
+    end
+
+    describe "#republish_documents_by_content_ids" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:republish_documents_by_content_ids"] }
+
+      test "Republishes documents by content ids" do
+        edition = create(:publication)
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document.id,
+          true,
+        )
+
+        task.invoke([edition.content_id])
+      end
+    end
+
+    describe "#republish_documents_by_content_ids_from_csv" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:republish_documents_by_content_ids_from_csv"] }
+      let(:edition) { create(:publication) }
+      let(:filename) { "content_ids_#{Time.zone.now.to_i}" }
+
+      setup do
+        File.open("lib/tasks/#{filename}.csv", "w+")
+        CSV.open("lib/tasks/#{filename}.csv", "wb") do |csv|
+          csv << ["content_id"]
+          csv << [edition.content_id]
+        end
+      end
+
+      after do
+        File.delete("lib/tasks/#{filename}.csv") if File.exist?("lib/tasks/#{filename}.csv")
+      end
+
+      test "Republishes documents by content ids from csv" do
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          edition.document.id,
+          true,
+        )
+
+        task.invoke(filename)
+      end
+    end
+
+    describe "#all" do
+      let(:task) { Rake::Task["publishing_api:bulk_republish:all"] }
+
+      test "Republishes all documents" do
+        publication = create(:published_publication)
+        news_story = create(:published_news_story)
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          news_story.document_id,
+          true,
+        )
+
+        PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
+          "bulk_republishing",
+          publication.document_id,
+          true,
+        )
+
+        task.invoke
+      end
     end
   end
 
-  describe "republishing all documents of a given organisation" do
-    let(:org) { create(:organisation) }
-    let(:task) { Rake::Task["publishing_api:bulk_republish:for_organisation"] }
-
-    test "Republishes the latest edition for each document owned by the organisation" do
-      edition = create(:published_news_article, organisations: [org])
-
-      PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
-        "bulk_republishing",
-        edition.document.id,
-        true,
-      ).once
-
-      task.invoke(org.slug)
-    end
-
-    test "Ignores documents owned by other organisation" do
-      some_other_org = create(:organisation)
-      edition = create(:published_news_article, organisations: [some_other_org])
-
-      PublishingApiDocumentRepublishingWorker.expects(:perform_async_in_queue).with(
-        "bulk_republishing",
-        edition.document.id,
-        true,
-      ).never
-
-      task.invoke(org.slug)
+  describe "#unpublish_with_redirect" do
+    describe "#for_content_id" do
     end
   end
 end
