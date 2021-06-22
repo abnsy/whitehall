@@ -1,0 +1,2 @@
+class SocialMediaAccountTranslation < ApplicationRecord
+end

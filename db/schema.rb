@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_04_22_135420) do
+ActiveRecord::Schema.define(version: 2021_06_21_100917) do
 
   create_table "about_pages", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.integer "topical_event_id"
@@ -425,7 +425,7 @@ ActiveRecord::Schema.define(version: 2021_04_22_135420) do
     t.string "logo_url"
     t.boolean "read_consultation_principles", default: false
     t.boolean "show_brexit_no_deal_content_notice", default: false
-    t.boolean "all_nation_applicability"
+    t.boolean "all_nation_applicability", default: true
     t.string "image_display_option"
     t.index ["alternative_format_provider_id"], name: "index_editions_on_alternative_format_provider_id"
     t.index ["closing_at"], name: "index_editions_on_closing_at"
@@ -894,6 +894,19 @@ ActiveRecord::Schema.define(version: 2021_04_22_135420) do
     t.index ["role_id"], name: "index_role_appointments_on_role_id"
   end
 
+  create_table "role_appointments_backup", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
+    t.integer "role_id"
+    t.integer "person_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.datetime "started_at"
+    t.datetime "ended_at"
+    t.string "content_id"
+    t.index ["ended_at"], name: "index_role_appointments_on_ended_at"
+    t.index ["person_id"], name: "index_role_appointments_on_person_id"
+    t.index ["role_id"], name: "index_role_appointments_on_role_id"
+  end
+
   create_table "role_translations", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.integer "role_id"
     t.string "locale"
@@ -933,6 +946,17 @@ ActiveRecord::Schema.define(version: 2021_04_22_135420) do
     t.text "govspeak"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "social_media_account_translations", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.string "url"
+    t.string "title"
+    t.string "locale", null: false
+    t.integer "social_media_account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locale"], name: "index_on_locale", length: 191
+    t.index ["social_media_account_id"], name: "index_on_social_media_account"
   end
 
   create_table "social_media_accounts", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
