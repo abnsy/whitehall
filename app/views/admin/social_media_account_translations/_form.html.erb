@@ -1,0 +1,18 @@
+<div class="row">
+  <div class="col-md-8">
+    <section>
+      <%= form_for translated_social_media_account, as: :social_media_account, url: admin_organisation_social_media_account_translation_path(@socialable, @translated_social_media_account, translation_locale), method: :put do |form| %>
+        <%= form.errors %>
+
+        <%= form.text_field :title %>
+
+        <%= form.text_field :url %>
+
+        <%= form.save_or_cancel cancel: [:admin, socialable, SocialMediaAccount] %>
+      <% end %>
+    </section>
+  </div>
+  <div class="col-md-4">
+    <%= simple_formatting_sidebar %>
+  </div>
+</div>

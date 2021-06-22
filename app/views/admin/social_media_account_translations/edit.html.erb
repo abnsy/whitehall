@@ -1,0 +1,5 @@
+<% page_title "Edit translation for #{@social_media_account.title}" %>
+
+<h1>Edit ‘<%= translation_locale.native_language_name %> (<%= translation_locale.english_language_name %>)’ translation for: <%= @social_media_account.title %></h1>
+
+<%= render partial: "form", locals: {translated_social_media_account: @translated_social_media_account, socialable: @socialable} %>

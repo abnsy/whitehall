@@ -9,6 +9,9 @@ class SocialMediaAccount < ApplicationRecord
   validates :url, presence: true, uri: true
   validates :title, length: { maximum: 255 }
 
+  include TranslatableModel
+  translates :url, :title
+
   def republish_organisation_to_publishing_api
     if socialable_type == "Organisation" && socialable.persisted?
       Whitehall::PublishingApi.republish_async(socialable)
@@ -21,5 +24,9 @@ class SocialMediaAccount < ApplicationRecord
 
   def display_name
     title.presence || service_name
+  end
+
+  def missing_translations
+    super & socialable.non_english_translated_locales
   end
 end

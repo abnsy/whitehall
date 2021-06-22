@@ -1,6 +1,7 @@
-<%= content_tag_for(:dl, social_media_account, class: "dl-horizontal") do %>
-  <%= definition('Title', social_media_account.title) if social_media_account.title.present? %>
-  <%= definition(social_media_account.service_name, social_media_account.url) do |url| %>
+<%= content_tag_for(:div, social_media_account, class: "well social-media-accounts-admin dl-horizontal") do %>
+<h3 class="remove-top-margin"><%= social_media_account.service_name %></h3>
+  <%= definition('Title', social_media_account.title) %>
+  <%= definition('URL', social_media_account.url) do |url| %>
     <p><%= link_to url, url %></p>
     <%= button_to "Delete",
           [:admin, socialable, social_media_account],
@@ -8,5 +9,27 @@
           class: "btn btn-sm btn-danger",
           data: { confirm: "Delete '#{social_media_account.service_name}' social media account from #{socialable.class.name.underscore.humanize.downcase} '#{socialable.name}'?" } %>
     <%= link_to icon("Edit"), edit_polymorphic_path([:admin, socialable, social_media_account]), class: "btn btn-default add-left-margin" %>
+    <% if social_media_account.missing_translations.any? %>
+      <a href="#add-translation-modal-<%= social_media_account.id %>" class="btn btn-default" data-toggle="modal"><i class="glyphicon glyphicon-plus-sign"></i> Add translation</a>
+      <%= render partial: 'admin/shared/translation_modal', locals: { id: "add-translation-modal-#{social_media_account.id}", form_path: [:admin, socialable, social_media_account, :translations], locales: social_media_account.missing_translations } %>
+    <% end %>
+
+    <% social_media_account.non_english_localised_models([:urls, :titles]).each do |translated_social_media_account| %>
+      <hr />
+      <h3><small><%= translated_social_media_account.translation_locale.native_and_english_language_name %> translation</small></h3>
+
+      <%= content_tag(:div, class: social_media_account_translation_css_class(translated_social_media_account)) do %>
+        <%= definition('Title', translated_social_media_account.title) %>
+        <%= definition('URL', translated_social_media_account.url) do |url| %>
+          <p><%= link_to url, url %></p>
+          <%= button_to "Delete",
+                [:admin, socialable, translated_social_media_account],
+                method: "delete",
+                class: "btn btn-sm btn-danger",
+                data: { confirm: "Delete '#{translated_social_media_account.service_name}' social media account from #{socialable.class.name.underscore.humanize.downcase} '#{socialable.name}'?" } %>
+          <%= link_to icon("Edit"), edit_polymorphic_path([:admin, socialable, translated_social_media_account]), class: "btn btn-default add-left-margin" %>
+        <% end %>
+      <% end %>
+    <% end %>
   <% end %>
 <% end %>

@@ -124,6 +124,14 @@ fieldset.contact_number {
   }
 }
 
+.social-media-accounts-admin {
+  max-width: 600px;
+
+  .social-media-account-translation.right-to-left {
+    direction: rtl;
+  }
+}
+
 fieldset.fatality-notice-casualties {
   h3 {
     margin-top: .5em;

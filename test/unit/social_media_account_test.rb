@@ -48,4 +48,12 @@ class SocialMediaAccountTest < ActiveSupport::TestCase
     account = build(:social_media_account, title: "", social_media_service: sms)
     assert_equal "Facebark", account.display_name
   end
+
+  test "#missing_translations should only include contactable translations" do
+    organisation = create(:organisation, translated_into: %i[de es fr])
+    account = create(:social_media_account, socialable: organisation, translated_into: [:es])
+
+    expected_locales = %i[de fr].map { |l| Locale.new(l) }
+    assert_equal expected_locales, account.missing_translations
+  end
 end
