@@ -1,4 +1,4 @@
-module ExploreMenuAbTestable
+module AbTests::ExploreMenuAbTestable
   CUSTOM_DIMENSION = 47
 
   ALLOWED_VARIANTS = %w[A B Z].freeze
