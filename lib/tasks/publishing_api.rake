@@ -24,7 +24,13 @@ namespace :publishing_api do
 
   desc "Publish redirect routes (eg /government/world)"
   task publish_redirect_routes: :environment do
-    redirect_routes.each do |route|
+    [
+      {
+        base_path: "/government/world",
+        destination: "/world",
+        content_id: "36620cf9-00b3-4d51-afab-e05e457061e3",
+      },
+    ].each do |route|
       Services.publishing_api.put_content(
         route[:content_id],
         base_path: route[:base_path],
@@ -128,24 +134,57 @@ namespace :publishing_api do
 
   desc "Send published item links to Publishing API."
   task patch_published_item_links: :environment do
-    patch_edition_links(Edition.published, "published")
+    count = editions.count
+    puts "# Sending #{count} published editions to Publishing API"
+
+    editions.pluck(:id).each_with_index do |item_id, i|
+      PublishingApiLinksWorker.perform_async(item_id)
+
+      puts "Queuing #{i}-#{i + 99} of #{count} items" if (i % 100).zero?
+    end
+
+    puts "Finished queuing items for Publishing API"
   end
 
   desc "Send withdrawn item links to Publishing API."
   task patch_withdrawn_item_links: :environment do
-    patch_edition_links(Edition.withdrawn, "withdrawn")
+    count = editions.count
+    puts "# Sending #{count} withdrawn editions to Publishing API"
+
+    editions.pluck(:id).each_with_index do |item_id, i|
+      PublishingApiLinksWorker.perform_async(item_id)
+
+      puts "Queuing #{i}-#{i + 99} of #{count} items" if (i % 100).zero?
+    end
+
+    puts "Finished queuing items for Publishing API"
   end
 
   desc "Send draft item links to Publishing API."
   task patch_draft_item_links: :environment do
-    patch_edition_links(Edition.draft, "draft")
+    count = editions.count
+    puts "# Sending #{count} withdrawn editions to Publishing API"
+
+    editions.pluck(:id).each_with_index do |item_id, i|
+      PublishingApiLinksWorker.perform_async(item_id)
+
+      puts "Queuing #{i}-#{i + 99} of #{count} items" if (i % 100).zero?
+    end
   end
 
   desc "Send publishable item links of a specific type to Publishing API (ie, 'CaseStudy')."
   task :publishing_api_patch_links_by_type, [:document_type] => :environment do |_, args|
     document_type = args[:document_type]
     editions = document_type.constantize.published
-    patch_edition_links(editions, "published")
+    puts "# Sending #{count} published editions to Publishing API"
+
+    editions.pluck(:id).each_with_index do |item_id, i|
+      PublishingApiLinksWorker.perform_async(item_id)
+
+      puts "Queuing #{i}-#{i + 99} of #{count} items" if (i % 100).zero?
+    end
+
+    puts "Finished queuing items for Publishing API"
   end
 
   desc "Bulk republishing"
@@ -153,7 +192,7 @@ namespace :publishing_api do
     desc "Republish all editions which have attachments to the Publishing API"
     task republish_editions_with_attachments: :environment do
       editions = Edition.publicly_visible.where(
-        id: Attachment.where(accessible: false, attachable_type: "Edition").select("attachable_id")
+        id: Attachment.where(accessible: false, attachable_type: "Edition").select("attachable_id"),
       )
 
       editions.joins(:document).distinct.pluck("documents.id").each do |document_id|
@@ -263,71 +302,5 @@ namespace :publishing_api do
     task :real, %i[content_id destination] => :environment do |_, args|
       DataHygiene::PublishingApiHtmlAttachmentRedirector.call(args[:content_id], args[:destination], dry_run: false)
     end
-  end
-
-  def special_routes
-    [
-      {
-        base_path: "/government",
-        content_id: "4672b1ff-f147-4d49-a5f4-4959588da5a8",
-        title: "Government prefix",
-        description: "The prefix route under which almost all government content is published.",
-      },
-      {
-        base_path: "/government/feed",
-        content_id: "725a346f-9e5b-486d-873d-2b050c126e09",
-        title: "Government feed",
-        description: "This route serves the feed of published content",
-        rendering_app: Whitehall::RenderingApp::COLLECTIONS_FRONTEND,
-        type: "exact",
-      },
-      {
-        base_path: "/courts-tribunals",
-        content_id: "f990c58c-687a-4baf-b1a0-ec2d02c4d654",
-        title: "Courts and tribunals",
-        description: "Courts and tribunals on GOV.UK.",
-      },
-      {
-        base_path: "/api/governments",
-        content_id: "2d5bafcc-2c45-4a84-8fbc-525b75dd6d19",
-        title: "Governments API",
-        description: "API exposing all governments on GOV.UK.",
-      },
-      {
-        base_path: "/api/world-locations",
-        content_id: "2a63b605-77be-4af5-932d-224a054dd5a5",
-        title: "World Locations API",
-        description: "API exposing all world locations on GOV.UK.",
-      },
-      {
-        base_path: "/api/worldwide-organisations",
-        content_id: "736f8a5a-ce6f-4a6f-b0cb-954442aa23c1",
-        title: "Worldwide Organisations API",
-        description: "API exposing all worldwide organisations on GOV.UK.",
-      },
-    ]
-  end
-
-  def redirect_routes
-    [
-      {
-        base_path: "/government/world",
-        destination: "/world",
-        content_id: "36620cf9-00b3-4d51-afab-e05e457061e3",
-      },
-    ]
-  end
-
-  def patch_edition_links(editions, state)
-    count = editions.count
-    puts "# Sending #{count} #{state} editions to Publishing API"
-
-    editions.pluck(:id).each_with_index do |item_id, i|
-      PublishingApiLinksWorker.perform_async(item_id)
-
-      puts "Queuing #{i}-#{i + 99} of #{count} items" if (i % 100).zero?
-    end
-
-    puts "Finished queuing items for Publishing API"
   end
 end

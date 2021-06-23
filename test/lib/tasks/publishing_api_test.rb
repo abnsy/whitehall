@@ -73,12 +73,12 @@ class PublishingApiRake < ActiveSupport::TestCase
     test "republishes all about pages" do
       corporate_info = create(
         :published_corporate_information_page,
-        corporate_information_page_type_id: CorporateInformationPageType::AboutUs.id
+        corporate_information_page_type_id: CorporateInformationPageType::AboutUs.id,
       )
 
       PublishingApiDocumentRepublishingWorker.any_instance.expects(:perform).with(
         corporate_info.document_id,
-        true
+        true,
       )
 
       task.invoke
@@ -94,7 +94,7 @@ class PublishingApiRake < ActiveSupport::TestCase
 
     test "republishes record by slug" do
       tasks.each do |task|
-        record = create(task[:model].underscore)
+        record = create!(task[:model].underscore)
         model = task[:model].constantize
 
         model.any_instance.expects(:publish_to_publishing_api)
@@ -117,7 +117,7 @@ class PublishingApiRake < ActiveSupport::TestCase
 
     test "republishes all records of a model" do
       tasks.each do |task|
-        create(task[:model].underscore)
+        create!(task[:model].underscore)
         model = task[:model].constantize
 
         model.any_instance.expects(:publish_to_publishing_api).at_least_once
@@ -290,7 +290,7 @@ class PublishingApiRake < ActiveSupport::TestCase
       setup do
         File.open("lib/tasks/#{filename}.csv", "w+")
         CSV.open("lib/tasks/#{filename}.csv", "wb") do |csv|
-          csv << ["content_id"]
+          csv << %w[content_id]
           csv << [edition.content_id]
         end
       end
